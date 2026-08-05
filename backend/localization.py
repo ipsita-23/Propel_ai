@@ -58,7 +58,7 @@ async def create_or_update_ticket(dt_id: str, fault_boundary: dict, affected_cou
         # A simple check: same dt_id and status not in (resolved, verified, closed)
         existing = await conn.fetchrow("""
             SELECT id FROM ticket 
-            WHERE dt_id = $1 AND fault_boundary::text = $2
+            WHERE dt_id = $1 AND fault_boundary::jsonb = $2::jsonb
               AND status NOT IN ('verified', 'closed', 'resolved')
         """, dt_id, boundary_json)
         
@@ -77,7 +77,8 @@ async def verify_restoration(dt_id: str, tree: nx.DiGraph, states: dict):
     async for conn in get_db():
         tickets = await conn.fetch("SELECT id, fault_boundary FROM ticket WHERE dt_id = $1 AND status NOT IN ('verified', 'closed')", dt_id)
         for ticket in tickets:
-            boundary = json.loads(ticket['fault_boundary'])
+            raw_boundary = ticket['fault_boundary']
+            boundary = raw_boundary if isinstance(raw_boundary, dict) else json.loads(raw_boundary)
             dark_node = boundary.get("first_dark")
             if dark_node and states.get(dark_node) == 'LIVE':
                 # The node that was dark is now live! Auto-verify.

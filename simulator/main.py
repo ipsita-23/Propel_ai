@@ -18,13 +18,13 @@ CORS_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173",
+        "http://localhost:5173,http://127.0.0.1:5173"
     ).split(",")
     if origin.strip()
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -224,7 +224,8 @@ def inject_fast_fault(req: FaultRequest, fault_type: str = "span_fault"):
         r = requests.post(f"{API_URL}/debug/evaluate/{dt_id}", timeout=10)
         return {"status": "injected_and_evaluated", "dt_id": dt_id, "backend": r.json()}
     except Exception as e:
-        return {"status": "injected_no_evaluate", "detail": str(e)}
+        text = r.text if 'r' in locals() else 'No response'
+        return {"status": "injected_no_evaluate", "detail": str(e), "body": text, "status_code": r.status_code if 'r' in locals() else None}
 
 
 # ──────────────────────────── Noise cases ──────────────────────────
