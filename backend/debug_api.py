@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter
 from localization import evaluate_dt
 from redis_client import get_redis
@@ -9,8 +10,12 @@ router = APIRouter(prefix="/debug")
 async def force_evaluate(dt_id: str):
     """Bypass the 3-minute debounce and run fault localisation immediately.
     For simulator / demo use only."""
-    await evaluate_dt(dt_id)
-    return {"status": "evaluated", "dt_id": dt_id}
+    try:
+        await evaluate_dt(dt_id)
+        return {"status": "evaluated", "dt_id": dt_id}
+    except Exception as e:
+        err = traceback.format_exc()
+        return {"status": "error", "dt_id": dt_id, "detail": str(e), "traceback": err}
 
 
 @router.post("/scheduled_outage/{dt_id}")
